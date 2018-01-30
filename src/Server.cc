@@ -1065,7 +1065,7 @@ UpStratumClient *StratumServer::createUpSession(const int8_t idx) {
 }
 
 void StratumServer::initJobsControl(const int8_t idx, uint16_t& totalJobs, uint16_t& initJobs) {
-  for (size_t i = 0; i < upPoolHost_.size(); i++) {
+  for (int8_t i = 0; i < upPoolHost_.size(); i++) {
     if (idx != i)
       continue;
     totalJobs = upPoolTotal_[i];
