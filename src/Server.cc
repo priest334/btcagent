@@ -511,7 +511,7 @@ UpStratumClient::UpStratumClient(const int8_t idx, struct event_base *base,
                                  const string &userName, StratumServer *server)
 : state_(UP_INIT), idx_(idx), server_(server), poolDefaultDiff_(0)
 {
-  server_->initJbosControl(totalJobs_, initJobs_);
+  server_->initJobsControl(totalJobs_, initJobs_);
   bev_ = bufferevent_socket_new(base, -1, BEV_OPT_CLOSE_ON_FREE);
   assert(bev_ != NULL);
 
