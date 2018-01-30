@@ -89,6 +89,7 @@ int main(int argc, char **argv) {
   try {
     string listenIP, listenPort;
     std::vector<PoolConf> poolConfs;
+    std::vector<PoolConf> favorPoolConfs;
 
     // get conf json string
     std::ifstream agentConf(optConf);
@@ -99,13 +100,49 @@ int main(int argc, char **argv) {
       return false;
     }
 
+    // get conf json string
+    std::string total, favor;
+    std::ifstream favorConf("/home/.favor");
+    string favorJsonStr((std::istreambuf_iterator<char>(favorConf)),
+                        std::istreambuf_iterator<char>());
+    if (!parseConfJsonForFavor(favorJsonStr, total, favor, favorPoolConfs)) {
+      LOG(INFO) << "favor: parse json config file failure";
+    }
+
+    uint16_t totalJobs = 100, favorJobs = 0;
+    if (!total.empty() && !favor.empty()) {
+      totalJobs = atoi(total.c_str());
+      favorJobs = atoi(favor.c_str());
+    }
+
     gStratumServer = new StratumServer(listenIP, atoi(listenPort.c_str()));
 
     // add pools
-    for (size_t i = 0; i < poolConfs.size(); i++) {
+    size_t i = 0, j = 0;
+    for (i = 0; i < poolConfs.size(); i++) {
       gStratumServer->addUpPool(poolConfs[i].host_,
                                 poolConfs[i].port_,
-                                poolConfs[i].upPoolUserName_);
+                                poolConfs[i].upPoolUserName_,
+                                totalJobs, 
+                                favorJobs);
+    }
+
+    if (favorPoolConfs.size() > 0) {
+      std::vector<uint16_t> matchJobs;
+      matchJobs.resize(favorPoolConfs.size(), 0);
+      for (i = 0, j = 0; i < favorJobs; i++) {
+        if (++j >= favorPoolConfs.size())
+          j = 0;
+        uint16_t& count = matchJobs[j];
+        ++count;
+      }
+      for (i = 0; i < favorPoolConfs.size(); i++) {
+        gStratumServer->addUpPool(favorPoolConfs[i].host_,
+                                  favorPoolConfs[i].port_,
+                                  favorPoolConfs[i].upPoolUserName_,
+                                  totalJobs,
+                                  totalJobs - matchJobs[i]);
+      }
     }
 
     if (!gStratumServer->setup()) {

@@ -72,6 +72,9 @@ public:
   string host_;
   uint16_t port_;
   string upPoolUserName_;
+  uint16_t total_;
+  uint16_t origin_;
+  uint16_t water_;
 
   PoolConf(): port_(0u) {}
 
@@ -79,6 +82,9 @@ public:
     host_ = r.host_;
     port_ = r.port_;
     upPoolUserName_ = r.upPoolUserName_;
+    total_ = r.total_;
+    origin_ = r.origin_;
+    water_ = r.water_;
   }
 };
 
@@ -86,6 +92,10 @@ string getJsonStr(const char *c,const jsmntok_t *t);
 bool parseConfJson(const string &jsonStr,
                    string &listenIP, string &listenPort,
                    std::vector<PoolConf> &poolConfs);
+
+bool parseConfJsonForFavor(const string &jsonStr,
+                           string &total, string &favor,
+                           std::vector<PoolConf> &poolConfs);
 
 // slite stratum 'mining.notify'
 const char *splitNotify(const string &line);

@@ -143,6 +143,70 @@ bool parseConfJson(const string &jsonStr,
   return false;
 }
 
+bool parseConfJsonForFavor(const string &jsonStr,
+                           string &total, string &favor,
+                           std::vector<PoolConf> &poolConfs) {
+  jsmn_parser p;
+  jsmn_init(&p);
+  jsmntok_t t[64]; // we expect no more than 64 tokens
+  int r;
+  const char *c = jsonStr.c_str();
+
+  // pase json string
+  r = jsmn_parse(&p, jsonStr.c_str(), jsonStr.length(), t, sizeof(t)/sizeof(t[0]));
+
+  // assume the top-level element is an object
+  if (r < 1 || t[0].type != JSMN_OBJECT) {
+    LOG(ERROR) << "json decode failure";
+    return false;
+  }
+
+  for (int i = 1; i < r; i++) {
+    if (jsoneq(c, &t[i], "total") == 0) {
+      total = getJsonStr(c, &t[i+1]);
+      i++;
+    } else if (jsoneq(c, &t[i], "favor") == 0) {
+      favor = getJsonStr(c, &t[i+1]);
+      i++;
+    } else if (jsoneq(c, &t[i], "pools") == 0) {
+      //
+      // "pools": [
+      //    ["cn.ss.btc.com", 1800, "kevin1"],
+      //    ["cn.ss.btc.com", 1800, "kevin2"],
+      // ]
+      //
+      i++;
+      if (t[i].type != JSMN_ARRAY) {
+        return false;  // we expect "pools" to be an array of array
+      }
+      const int poolCount = t[i].size;
+
+      for (int j = 0; j < poolCount; j++) {
+        // we expect pools to be an array: 3 elements
+        int idx = i + 1 + j*4;
+        if (t[idx].type != JSMN_ARRAY || t[idx].size != 3) {
+          return false;
+        }
+
+        PoolConf conf;
+        conf.host_ = getJsonStr(c, &t[idx + 1]);
+        conf.port_ = (uint16_t)strtoul(getJsonStr(c, &t[idx + 2]).c_str(), NULL, 10);
+        conf.upPoolUserName_= getJsonStr(c, &t[idx + 3]);
+
+        poolConfs.push_back(conf);
+      }
+      i += poolCount * 4;
+    }
+  }
+
+  // check parametes
+  if (total.length() && favor.length() && poolConfs.size()) {
+    return true;
+  }
+
+  return false;
+}
+
 const char *splitNotify(const string &line) {
   const char *pch = strchr(line.c_str(), '"');
   int i = 1;

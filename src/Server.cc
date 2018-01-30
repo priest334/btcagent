@@ -511,6 +511,7 @@ UpStratumClient::UpStratumClient(const int8_t idx, struct event_base *base,
                                  const string &userName, StratumServer *server)
 : state_(UP_INIT), idx_(idx), server_(server), poolDefaultDiff_(0)
 {
+  server_->initJbosControl(totalJobs_, initJobs_);
   bev_ = bufferevent_socket_new(base, -1, BEV_OPT_CLOSE_ON_FREE);
   assert(bev_ != NULL);
 
@@ -740,6 +741,11 @@ void UpStratumClient::handleStratumMessage(const string &line) {
 
 bool UpStratumClient::isAvailable() {
   const uint32_t kJobExpiredTime = 60 * 5;  // seconds
+
+  if (++runningJobs_ > totalJobs_) {
+    runningJobs_ = initJobs_;
+    return false;
+  }
 
   if (state_ == UP_AUTHENTICATED &&
       latestMiningNotifyStr_.empty() == false &&
@@ -1013,14 +1019,26 @@ void StratumServer::stop() {
   event_base_loopexit(base_, NULL);
 }
 
+// void StratumServer::addUpPool(const string &host, const uint16_t port,
+//                               const string &upPoolUserName) {
+//   upPoolHost_    .push_back(host);
+//   upPoolPort_    .push_back(port);
+//   upPoolUserName_.push_back(upPoolUserName);
+
+//   LOG(INFO) << "add pool: " << host << ":" << port << ", username: " << upPoolUserName;
+// }
+
 void StratumServer::addUpPool(const string &host, const uint16_t port,
-                              const string &upPoolUserName) {
+                              const string &upPoolUserName, const uint16_t total, const uint16_t origin) {
   upPoolHost_    .push_back(host);
   upPoolPort_    .push_back(port);
   upPoolUserName_.push_back(upPoolUserName);
+  upPoolTotal_   .push_back(total);
+  upPoolOrigin_  .push_back(origin);
 
   LOG(INFO) << "add pool: " << host << ":" << port << ", username: " << upPoolUserName;
 }
+
 
 UpStratumClient *StratumServer::createUpSession(const int8_t idx) {
   for (size_t i = 0; i < upPoolHost_.size(); i++) {
@@ -1044,6 +1062,18 @@ UpStratumClient *StratumServer::createUpSession(const int8_t idx) {
   }
 
   return NULL;
+}
+
+void StratumServer::initJobsControl(const int8_t idx, uint16_t& totalJobs, uint16_t& initJobs) {
+  for (size_t i = 0; i < upPoolHost_.size(); i++) {
+    if (idx != i)
+      continue;
+    totalJobs = upPoolTotal_[i];
+    initJobs = upPoolOrigin_[i];
+    break;
+  }
+
+  LOG(INFO) << "failed to set jobs control";
 }
 
 bool StratumServer::setup() {

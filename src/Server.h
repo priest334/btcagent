@@ -205,6 +205,8 @@ class StratumServer {
   vector<string>   upPoolHost_;
   vector<uint16_t> upPoolPort_;
   vector<string>   upPoolUserName_;
+  vector<string>   upPoolTotal_;
+  vector<uint16_t> upPoolOrigin_;
 
   // up stream connnections
   vector<UpStratumClient *> upSessions_;
@@ -231,9 +233,12 @@ public:
   ~StratumServer();
 
   UpStratumClient *createUpSession(const int8_t idx);
+  void initJobsControl(const int8_t idx, uint16_t& totalJobs, uint16_t& initJobs);
 
+  // void addUpPool(const string &host, const uint16_t port,
+  //                const string &upPoolUserName);
   void addUpPool(const string &host, const uint16_t port,
-                 const string &upPoolUserName);
+                 const string &upPoolUserName, const uint16_t total = 100, const uint16_t origin = 0);
 
   void addDownConnection   (StratumSession *conn);
   void removeDownConnection(StratumSession *conn);
@@ -308,6 +313,11 @@ public:
 
   // last stratum job received from pool
   uint32_t lastJobReceivedTime_;
+
+  // control jobs
+  uint16_t totalJobs_;
+  uint16_t initJobs_;
+  uint16_t runningJobs_;
 
 public:
   UpStratumClient(const int8_t idx,
