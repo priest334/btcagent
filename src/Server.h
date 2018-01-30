@@ -205,7 +205,7 @@ class StratumServer {
   vector<string>   upPoolHost_;
   vector<uint16_t> upPoolPort_;
   vector<string>   upPoolUserName_;
-  vector<string>   upPoolTotal_;
+  vector<uint16_t> upPoolTotal_;
   vector<uint16_t> upPoolOrigin_;
 
   // up stream connnections
