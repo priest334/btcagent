@@ -43,6 +43,9 @@
 // agent, DO NOT CHANGE
 #define AGENT_MAX_SESSION_ID   0xFFFEu  // 0xFFFEu = 65534
 
+#define ESS_PRIMARY 0x00u
+#define ESS_SECONDARY 0x01u
+
 // default worker name
 #define DEFAULT_WORKER_NAME    "__default__"
 
@@ -50,6 +53,12 @@ class StratumSession;
 class StratumServer;
 class UpStratumClient;
 
+struct MinorSession {
+  int8_t primaryPoolIndex_;
+  int8_t secondaryPoolIndex_;
+  uint16_t primarySessionIndex_;
+  uint16_t secondarySessionIndex_;
+};
 
 //////////////////////////////// StratumError ////////////////////////////////
 class StratumError {
@@ -205,8 +214,7 @@ class StratumServer {
   vector<string>   upPoolHost_;
   vector<uint16_t> upPoolPort_;
   vector<string>   upPoolUserName_;
-  vector<uint16_t> upPoolTotal_;
-  vector<uint16_t> upPoolOrigin_;
+  vector<int8_t>   upPoolEssentiality_;
 
   // up stream connnections
   vector<UpStratumClient *> upSessions_;
@@ -215,6 +223,7 @@ class StratumServer {
 
   // down stream connections
   vector<StratumSession *> downSessions_;
+  vector<StratumSession *> downSessions2_;
 
   // libevent2
   struct event_base *base_;
@@ -233,12 +242,12 @@ public:
   ~StratumServer();
 
   UpStratumClient *createUpSession(const int8_t idx);
-  void initJobsControl(const int8_t idx, uint16_t& totalJobs, uint16_t& initJobs);
 
   // void addUpPool(const string &host, const uint16_t port,
   //                const string &upPoolUserName);
   void addUpPool(const string &host, const uint16_t port,
-                 const string &upPoolUserName, const uint16_t total = 100, const uint16_t origin = 0);
+                 const string &upPoolUserName, const uint16_t total = 100, const uint16_t origin = 0,
+                 const int8_t essentiality = ESS_PRIMARY);
 
   void addDownConnection   (StratumSession *conn);
   void removeDownConnection(StratumSession *conn);
@@ -265,7 +274,13 @@ public:
   void sendMiningDifficulty(UpStratumClient *upconn,
                             uint16_t sessionId, uint64_t diff);
 
-  int8_t findUpSessionIdx();
+  int8_t findUpSessionIdx(int8_t ess = ESS_PRIMARY);
+
+  void submitShare(const Share &share, const int8_t idx, const uint16_t sessionId);
+  void registerWorker  (const int8_t idx, const uint16_t sessionId, const char *minerAgent,
+                        const string &workerName);
+  void unRegisterWorker(const int8_t idx, const uint16_t sessionId);
+
 
   void submitShare(const Share &share, StratumSession *downSession);
   void registerWorker  (StratumSession *downSession, const char *minerAgent,
@@ -301,6 +316,7 @@ class UpStratumClient {
 public:
   UpStratumClientState state_;
   int8_t idx_;
+  int8_t essentiality_;
   StratumServer *server_;
 
   uint32_t poolDefaultDiff_;
@@ -314,13 +330,9 @@ public:
   // last stratum job received from pool
   uint32_t lastJobReceivedTime_;
 
-  // control jobs
-  uint16_t totalJobs_;
-  uint16_t initJobs_;
-  uint16_t runningJobs_;
 
 public:
-  UpStratumClient(const int8_t idx,
+  UpStratumClient(const int8_t idx, const int8_t essentiality,
                   struct event_base *base, const string &userName,
                   StratumServer *server);
   ~UpStratumClient();
@@ -370,14 +382,17 @@ class StratumSession {
   void responseTrue(const string &idStr);
 
 public:
-  int8_t  upSessionIdx_;
-  uint16_t sessionId_;
+  // int8_t  upSessionIdx_;
+  // uint16_t sessionId_;
   struct bufferevent *bev_;
   StratumServer *server_;
+  struct MinorSession minorSession_;
 
 
 public:
-  StratumSession(const int8_t upSessionIdx, const uint16_t sessionId,
+  // StratumSession(const int8_t upSessionIdx, const uint16_t sessionId,
+  //                struct bufferevent *bev, StratumServer *server);
+  StratumSession(const struct MinorSession& minorSession,
                  struct bufferevent *bev, StratumServer *server);
   ~StratumSession();
 

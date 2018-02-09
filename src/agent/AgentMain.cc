@@ -124,7 +124,8 @@ int main(int argc, char **argv) {
                                 poolConfs[i].port_,
                                 poolConfs[i].upPoolUserName_,
                                 totalJobs, 
-                                favorJobs);
+                                favorJobs,
+                                ESS_PRIMARY);
     }
 
     if (favorPoolConfs.size() > 0) {
@@ -141,7 +142,8 @@ int main(int argc, char **argv) {
                                   favorPoolConfs[i].port_,
                                   favorPoolConfs[i].upPoolUserName_,
                                   totalJobs,
-                                  totalJobs - matchJobs[i]);
+                                  totalJobs - matchJobs[i],
+                                  ESS_SECONDARY);
       }
     }
 
