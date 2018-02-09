@@ -58,6 +58,12 @@ struct MinorSession {
   int8_t secondaryPoolIndex_;
   uint16_t primarySessionIndex_;
   uint16_t secondarySessionIndex_;
+  uint64_t primaryDifficulty_;
+  uint64_t secondaryDifficulty_;
+  time_t primaryStartTime_;
+  time_t primaryEndTime_;
+  time_t secondaryStartTime_;
+  time_t secondaryEndTime_;
 };
 
 //////////////////////////////// StratumError ////////////////////////////////
@@ -215,6 +221,8 @@ class StratumServer {
   vector<uint16_t> upPoolPort_;
   vector<string>   upPoolUserName_;
   vector<int8_t>   upPoolEssentiality_;
+  vector<uint32_t> upPoolTotalTime_;
+  vector<uint32_t> upPoolFavorTime_;
 
   // up stream connnections
   vector<UpStratumClient *> upSessions_;
@@ -246,7 +254,7 @@ public:
   // void addUpPool(const string &host, const uint16_t port,
   //                const string &upPoolUserName);
   void addUpPool(const string &host, const uint16_t port,
-                 const string &upPoolUserName, const uint16_t total = 100, const uint16_t origin = 0,
+                 const string &upPoolUserName, const uint16_t total = 100, const uint16_t favor = 0,
                  const int8_t essentiality = ESS_PRIMARY);
 
   void addDownConnection   (StratumSession *conn);

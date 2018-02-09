@@ -73,8 +73,7 @@ public:
   uint16_t port_;
   string upPoolUserName_;
   uint16_t total_;
-  uint16_t origin_;
-  uint16_t water_;
+  uint16_t favor_;
 
   PoolConf(): port_(0u) {}
 
@@ -83,8 +82,7 @@ public:
     port_ = r.port_;
     upPoolUserName_ = r.upPoolUserName_;
     total_ = r.total_;
-    origin_ = r.origin_;
-    water_ = r.water_;
+    favor_ = r.favor_;
   }
 };
 

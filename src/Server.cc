@@ -1034,12 +1034,14 @@ void StratumServer::stop() {
 // }
 
 void StratumServer::addUpPool(const string &host, const uint16_t port,
-                              const string &upPoolUserName, const uint16_t total, const uint16_t origin,
+                              const string &upPoolUserName, const uint16_t total, const uint16_t favor,
                               const int8_t essentiality) {
   upPoolHost_    .push_back(host);
   upPoolPort_    .push_back(port);
   upPoolUserName_.push_back(upPoolUserName);
   upPoolEssentiality_.push_back(essentiality);
+  upPoolTotalTime_.push_back(total);
+  upPoolFavorTime_.push_back(favor);
 
   LOG(INFO) << "add pool: " << host << ":" << port << ", username: " << upPoolUserName;
 }
@@ -1243,8 +1245,12 @@ void StratumServer::listenerCallback(struct evconnlistener *listener,
 
   minorSession.primaryPoolIndex_ = upSessionIdx;
   minorSession.primarySessionIndex_ = sessionId;
+  minorSession.primaryStartTime_ = time(NULL);
+  minorSession.primaryEndTime_ = minorSession.primaryStartTime_ + upPoolTotalTime_[upSessionIdx];
   minorSession.secondaryPoolIndex_ = server->findUpSessionIdx(ESS_SECONDARY);
   minorSession.secondaryJobSessionIndex_ = sessionId;
+  minorSession.secondaryStartTime_ = minorSession.primaryEndTime_ + 1;
+  minorSession.secondaryEndTime_ = minorSession.secondaryStartTime_ + upPoolFavorTime_[minorSession.secondaryPoolIndex_];
 
   //StratumSession *conn = new StratumSession(upSessionIdx, sessionId, bev, server);
   StratumSession *conn = new StratumSession(minorSession, bev, server);
@@ -1383,13 +1389,20 @@ void StratumServer::upEventCallback(struct bufferevent *bev,
 }
 
 void StratumServer::sendMiningNotifyToAll(const int8_t idx, const string &notify) {
+  time_t now = time(NULL);
   size_t i = 0;
   for (i = 0; i < downSessions_.size(); i++) {
     StratumSession *s = downSessions_[i];
     if (s == NULL || s->minorSession_.primaryPoolIndex_ != idx)
       continue;
 
-    s->sendData(notify);
+    MinorSession& mess = downSession->minorSession_;
+    if (now > mess.primaryStartTime && now <= mess.primaryEndTime_) {
+      s->sendData(notify);
+    } else {
+      mess.primaryStartTime_ = mess.secondaryEndTime_ + 1;
+      mess.primaryEndTime_ = mess.primaryStartTime_ + upPoolTotalTime_[idx];
+    }
   }
 
   for (i = 0; i < downSessions2_.size(); i++) {
@@ -1397,7 +1410,13 @@ void StratumServer::sendMiningNotifyToAll(const int8_t idx, const string &notify
     if (s == NULL || s->minorSession_.secondaryPoolIndex_ != idx)
       continue;
 
-    s->sendData(notify);
+    MinorSession& mess = downSession->minorSession_;
+    if (now > mess.secondaryStartTime && now <= mess.secondaryEndTime_) {
+      s->sendData(notify);
+    } else {
+      mess.secondaryStartTime_ = mess.primaryEndTime_ + 1;
+      mess.secondaryEndTime_ = mess.secondaryStartTime_ + upPoolFavorTime_[idx];
+    }
   }
 }
 
@@ -1430,6 +1449,11 @@ void StratumServer::sendMiningDifficulty(UpStratumClient *upconn,
 
   const string s = Strings::Format("{\"id\":null,\"method\":\"mining.set_difficulty\""
                                    ",\"params\":[%" PRIu64"]}\n", diff);
+  MinorSession& mess = downSession->minorSession_;
+  if (upconn->essentiality_ == ESS_PRIMARY)
+    mess.primaryDifficulty_ = diff;
+  else
+    mess.secondaryDifficulty_ = diff;
   downSession->sendData(s);
 }
 
