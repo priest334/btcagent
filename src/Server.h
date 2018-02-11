@@ -390,12 +390,11 @@ class StratumSession {
   void responseTrue(const string &idStr);
 
 public:
-  // int8_t  upSessionIdx_;
-  // uint16_t sessionId_;
   struct bufferevent *bev_;
   StratumServer *server_;
   struct MinorSession minorSession_;
-
+  int8_t  upSessionIdx_;
+  uint16_t sessionId_;
 
 public:
   // StratumSession(const int8_t upSessionIdx, const uint16_t sessionId,
@@ -404,6 +403,7 @@ public:
                  struct bufferevent *bev, StratumServer *server);
   ~StratumSession();
 
+  void SetSessionContext(int8_t upSessionIdx, uint16_t sessionId);
   void recvData(struct evbuffer *buf);
   void sendData(const char *data, size_t len);
   inline void sendData(const string &str) {

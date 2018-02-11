@@ -550,6 +550,11 @@ bool UpStratumClient::connect(struct sockaddr_in &sin) {
   return false;
 }
 
+void UpStratumClient::SetSessionContext(int8_t upSessionIdx, uint16_t sessionId) {
+  upSessionIdx_ = upSessionIdx;
+  sessionId_ = sessionId;
+}
+
 void UpStratumClient::recvData(struct evbuffer *buf) {
   // moves all data from src to the end of dst
   evbuffer_add_buffer(inBuf_, buf);
@@ -769,6 +774,8 @@ StratumSession::StratumSession(const struct MinorSession& minorSession,
   inBuf_ = evbuffer_new();
   assert(inBuf_ != NULL);
   minorSession_ = minorSession;
+  upSessionIdx_ = minorSession_.primaryPoolIndex_;
+  sessionId_ = minorSession_.primarySessionIndex_;
 }
 
 StratumSession::~StratumSession() {
@@ -1398,6 +1405,7 @@ void StratumServer::sendMiningNotifyToAll(const int8_t idx, const string &notify
 
     MinorSession& mess = downSession->minorSession_;
     if (now > mess.primaryStartTime && now <= mess.primaryEndTime_) {
+      downSession->SetSessionContext(mess.primaryPoolIndex_, mess.primarySessionIndex_);
       s->sendData(notify);
     } else {
       mess.primaryStartTime_ = mess.secondaryEndTime_ + 1;
@@ -1412,6 +1420,7 @@ void StratumServer::sendMiningNotifyToAll(const int8_t idx, const string &notify
 
     MinorSession& mess = downSession->minorSession_;
     if (now > mess.secondaryStartTime && now <= mess.secondaryEndTime_) {
+      downSession->SetSessionContext(mess.secondaryPoolIndex_, mess.secondarySessionIndex_);
       s->sendData(notify);
     } else {
       mess.secondaryStartTime_ = mess.primaryEndTime_ + 1;
