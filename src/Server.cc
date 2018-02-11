@@ -941,7 +941,7 @@ void StratumSession::handleRequest_Authorize(const string &idStr,
 
   // sent sessionId, minerAgent_, workerName to server_
   server_->registerWorker(minorSession_.primaryPoolIndex_, minorSession_.primarySessionIndex_, minerAgent_, workerName);
-  server_->registerWorker(minorSession_.secondaryPoolIndex_, minorSession_.secondaryJobSessionIndex_, minerAgent_, workerName);
+  server_->registerWorker(minorSession_.secondaryPoolIndex_, minorSession_.secondarySessionIndex_, minerAgent_, workerName);
 
   // minerAgent_ will not use anymore
   if (minerAgent_) {
@@ -994,7 +994,7 @@ StratumServer::StratumServer(const string &listenIP, const uint16_t listenPort)
 
   upEvTimer_ = NULL;
   downSessions_.resize(AGENT_MAX_SESSION_ID + 1, NULL);
-  downSessions_2.resize(AGENT_MAX_SESSION_ID + 1, NULL);
+  downSessions2_.resize(AGENT_MAX_SESSION_ID + 1, NULL);
 }
 
 StratumServer::~StratumServer() {
@@ -1095,7 +1095,6 @@ bool StratumServer::setup() {
 
   // create up sessions
   for (int8_t i = 0; i < kUpSessionCount_; i++) {
-    upSession
     UpStratumClient *up = createUpSession(i);
     if (up == NULL)
       return false;
@@ -1253,11 +1252,11 @@ void StratumServer::listenerCallback(struct evconnlistener *listener,
   minorSession.primaryPoolIndex_ = upSessionIdx;
   minorSession.primarySessionIndex_ = sessionId;
   minorSession.primaryStartTime_ = time(NULL);
-  minorSession.primaryEndTime_ = minorSession.primaryStartTime_ + upPoolTotalTime_[upSessionIdx];
+  minorSession.primaryEndTime_ = minorSession.primaryStartTime_ + server->upPoolTotalTime_[upSessionIdx];
   minorSession.secondaryPoolIndex_ = server->findUpSessionIdx(ESS_SECONDARY);
-  minorSession.secondaryJobSessionIndex_ = sessionId;
+  minorSession.secondarySessionIndex_ = sessionId;
   minorSession.secondaryStartTime_ = minorSession.primaryEndTime_ + 1;
-  minorSession.secondaryEndTime_ = minorSession.secondaryStartTime_ + upPoolFavorTime_[minorSession.secondaryPoolIndex_];
+  minorSession.secondaryEndTime_ = minorSession.secondaryStartTime_ + server->upPoolFavorTime_[minorSession.secondaryPoolIndex_];
 
   //StratumSession *conn = new StratumSession(upSessionIdx, sessionId, bev, server);
   StratumSession *conn = new StratumSession(minorSession, bev, server);
@@ -1317,7 +1316,7 @@ void StratumServer::removeDownConnection(StratumSession *downconn) {
   // unregister worker
   unRegisterWorker(downconn);
 
-  MinorSession& mess = conn->minorSession_;
+  MinorSession& mess = downconn->minorSession_;
   // clear resources
   sessionIDManager_.freeSessionId(mess.primarySessionIndex_);
   downSessions_  [mess.primarySessionIndex_] = NULL;
@@ -1403,9 +1402,9 @@ void StratumServer::sendMiningNotifyToAll(const int8_t idx, const string &notify
     if (s == NULL || s->minorSession_.primaryPoolIndex_ != idx)
       continue;
 
-    MinorSession& mess = downSession->minorSession_;
+    MinorSession& mess = s->minorSession_;
     if (now > mess.primaryStartTime && now <= mess.primaryEndTime_) {
-      downSession->SetSessionContext(mess.primaryPoolIndex_, mess.primarySessionIndex_);
+      s->SetSessionContext(mess.primaryPoolIndex_, mess.primarySessionIndex_);
       s->sendData(notify);
     } else {
       mess.primaryStartTime_ = mess.secondaryEndTime_ + 1;
@@ -1418,9 +1417,9 @@ void StratumServer::sendMiningNotifyToAll(const int8_t idx, const string &notify
     if (s == NULL || s->minorSession_.secondaryPoolIndex_ != idx)
       continue;
 
-    MinorSession& mess = downSession->minorSession_;
+    MinorSession& mess = s->minorSession_;
     if (now > mess.secondaryStartTime && now <= mess.secondaryEndTime_) {
-      downSession->SetSessionContext(mess.secondaryPoolIndex_, mess.secondarySessionIndex_);
+      s->SetSessionContext(mess.secondaryPoolIndex_, mess.secondarySessionIndex_);
       s->sendData(notify);
     } else {
       mess.secondaryStartTime_ = mess.primaryEndTime_ + 1;
@@ -1473,7 +1472,7 @@ int8_t StratumServer::findUpSessionIdx(int8_t ess) {
   for (size_t i = 0; i < upSessions_.size(); i++) {
     if (upSessions_[i] == NULL || !upSessions_[i]->isAvailable())
       continue;
-    if (ess != upSessions_[i].ess)
+    if (ess != upSessions_[i].essentiality_)
       continue;
 
     if (count == -1) {
