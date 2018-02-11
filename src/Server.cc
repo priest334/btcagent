@@ -550,11 +550,6 @@ bool UpStratumClient::connect(struct sockaddr_in &sin) {
   return false;
 }
 
-void UpStratumClient::SetSessionContext(int8_t upSessionIdx, uint16_t sessionId) {
-  upSessionIdx_ = upSessionIdx;
-  sessionId_ = sessionId;
-}
-
 void UpStratumClient::recvData(struct evbuffer *buf) {
   // moves all data from src to the end of dst
   evbuffer_add_buffer(inBuf_, buf);
@@ -791,6 +786,11 @@ void StratumSession::setReadTimeout(const int32_t timeout) {
   struct timeval readtv  = {timeout, 0};
   struct timeval writetv = {120, 0};
   bufferevent_set_timeouts(bev_, &readtv, &writetv);
+}
+
+void StratumSession::SetSessionContext(int8_t upSessionIdx, uint16_t sessionId) {
+  upSessionIdx_ = upSessionIdx;
+  sessionId_ = sessionId;
 }
 
 void StratumSession::sendData(const char *data, size_t len) {
