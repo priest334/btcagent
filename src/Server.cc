@@ -1472,7 +1472,7 @@ int8_t StratumServer::findUpSessionIdx(int8_t ess) {
   for (size_t i = 0; i < upSessions_.size(); i++) {
     if (upSessions_[i] == NULL || !upSessions_[i]->isAvailable())
       continue;
-    if (ess != upSessions_[i].essentiality_)
+    if (ess != upSessions_[i]->essentiality_)
       continue;
 
     if (count == -1) {
@@ -1588,7 +1588,7 @@ void StratumServer::registerWorker(const int8_t idx, const uint16_t sessionId,
   up->sendData(buf);
 }
 
-void StratumServer::unRegisterWorker(const int8_t idx, const uint16_t sessionId) {
+void StratumServer::unregisterWorker(const int8_t idx, const uint16_t sessionId) {
   //
   // CMD_UNREGISTER_WORKER:
   // | magic_number(1) | cmd(1) | len (2) | session_id(2) |
@@ -1627,7 +1627,7 @@ void StratumServer::registerWorker(StratumSession *downSession, const char *mine
   registerWorker(msess.secondaryPoolIndex_, msess.secondarySessionIndex_, minerAgent, workerName);                
 }
 
-void StratumServer::unRegisterWorker(StratumSession *downSession) {
+void StratumServer::unregisterWorker(StratumSession *downSession) {
   MinorSession& msess = downSession->minorSession_;
   unregisterWorker(msess.primaryPoolIndex_, msess.primarySessionIndex_);
   unregisterWorker(msess.secondaryPoolIndex_, msess.secondarySessionIndex_);                
