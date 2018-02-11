@@ -1403,7 +1403,7 @@ void StratumServer::sendMiningNotifyToAll(const int8_t idx, const string &notify
       continue;
 
     MinorSession& mess = s->minorSession_;
-    if (now > mess.primaryStartTime && now <= mess.primaryEndTime_) {
+    if (now > mess.primaryStartTime_ && now <= mess.primaryEndTime_) {
       s->SetSessionContext(mess.primaryPoolIndex_, mess.primarySessionIndex_);
       s->sendData(notify);
     } else {
@@ -1418,7 +1418,7 @@ void StratumServer::sendMiningNotifyToAll(const int8_t idx, const string &notify
       continue;
 
     MinorSession& mess = s->minorSession_;
-    if (now > mess.secondaryStartTime && now <= mess.secondaryEndTime_) {
+    if (now > mess.secondaryStartTime_ && now <= mess.secondaryEndTime_) {
       s->SetSessionContext(mess.secondaryPoolIndex_, mess.secondarySessionIndex_);
       s->sendData(notify);
     } else {
