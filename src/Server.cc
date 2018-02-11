@@ -1588,7 +1588,7 @@ void StratumServer::registerWorker(const int8_t idx, const uint16_t sessionId,
   up->sendData(buf);
 }
 
-void StratumServer::unregisterWorker(const int8_t idx, const uint16_t sessionId) {
+void StratumServer::unRegisterWorker(const int8_t idx, const uint16_t sessionId) {
   //
   // CMD_UNREGISTER_WORKER:
   // | magic_number(1) | cmd(1) | len (2) | session_id(2) |
@@ -1627,9 +1627,9 @@ void StratumServer::registerWorker(StratumSession *downSession, const char *mine
   registerWorker(msess.secondaryPoolIndex_, msess.secondarySessionIndex_, minerAgent, workerName);                
 }
 
-void StratumServer::unregisterWorker(StratumSession *downSession) {
+void StratumServer::unRegisterWorker(StratumSession *downSession) {
   MinorSession& msess = downSession->minorSession_;
-  unregisterWorker(msess.primaryPoolIndex_, msess.primarySessionIndex_);
-  unregisterWorker(msess.secondaryPoolIndex_, msess.secondarySessionIndex_);                
+  unRegisterWorker(msess.primaryPoolIndex_, msess.primarySessionIndex_);
+  unRegisterWorker(msess.secondaryPoolIndex_, msess.secondarySessionIndex_);                
 }
 

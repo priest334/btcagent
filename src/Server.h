@@ -287,13 +287,13 @@ public:
   void submitShare(const Share &share, const int8_t idx, const uint16_t sessionId);
   void registerWorker  (const int8_t idx, const uint16_t sessionId, const char *minerAgent,
                         const string &workerName);
-  void unregisterWorker(const int8_t idx, const uint16_t sessionId);
+  void unRegisterWorker(const int8_t idx, const uint16_t sessionId);
 
 
   void submitShare(const Share &share, StratumSession *downSession);
   void registerWorker  (StratumSession *downSession, const char *minerAgent,
                         const string &workerName);
-  void unregisterWorker(StratumSession *downSession);
+  void unRegisterWorker(StratumSession *downSession);
 
   bool setup();
   void run();
